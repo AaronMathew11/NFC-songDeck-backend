@@ -14,8 +14,27 @@ const rosterUploadModule = async (req, res) => {
 
 const getRosterModule = async (req, res) => {
     try {
-      result = await Data.find();
-      res.send({status:200, success:true, data:result});
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      
+      const total = await Data.countDocuments();
+      const result = await Data.find()
+        .skip(skip)
+        .limit(limit)
+        .sort({ Date: 1 });
+      
+      res.send({
+        status: 200, 
+        success: true, 
+        data: result,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
     }
     catch(e)
     {

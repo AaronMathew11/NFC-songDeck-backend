@@ -19,7 +19,6 @@ routes.get("/getSongsByCategory/:category", songsMasterListController.getSongsBy
 routes.get("/getAllMasterSongs", songsMasterListController.getAllSongs);
 
 routes.post("/login", authController.login);
-routes.post("/register", authController.register);
 
 routes.post("/uploadQuietTimeNote", authController.verifyToken, quietTimeController.upload.single('image'), quietTimeController.uploadQuietTimeNote);
 routes.get("/getMyNotes", authController.verifyToken, quietTimeController.getMyNotes);
