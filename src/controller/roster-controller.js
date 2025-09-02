@@ -1,5 +1,5 @@
-var Data = require('../models/Data')
-
+var Data = require('../models/Data');
+const { sendWeeklyRoster } = require('../services/emailService');
 
 const rosterUploadModule = async (req, res) => {
         try {
@@ -23,4 +23,14 @@ const getRosterModule = async (req, res) => {
     }
   };
 
-module.exports = { getRosterModule, rosterUploadModule };
+const sendRosterEmail = async (req, res) => {
+  try {
+    await sendWeeklyRoster();
+    res.status(200).json({ success: true, message: 'Roster emails sent successfully' });
+  } catch (error) {
+    console.error('Error sending roster emails:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports = { getRosterModule, rosterUploadModule, sendRosterEmail };
