@@ -20,9 +20,9 @@ const getRosterModule = async (req, res) => {
       
       const total = await Data.countDocuments();
       const result = await Data.find()
+        .sort({ Date: 1 })
         .skip(skip)
-        .limit(limit)
-        .sort({ Date: 1 });
+        .limit(limit);
       
       res.send({
         status: 200, 
