@@ -1,18 +1,29 @@
 const { google } = require('googleapis');
 const User = require('../models/User');
+const functions = require('firebase-functions');
 
 class YouTubeService {
   constructor() {
     console.log('YouTube Service initializing...');
     
-    // Get credentials from environment variables
-    const clientId = process.env.YOUTUBE_CLIENT_ID;
-    const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-    const redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+    // Get credentials from Firebase config or environment variables (with fallback handling)
+    let clientId, clientSecret, redirectUri;
+    
+    try {
+      const config = functions.config();
+      clientId = config.youtube?.client_id || process.env.YOUTUBE_CLIENT_ID;
+      clientSecret = config.youtube?.client_secret || process.env.YOUTUBE_CLIENT_SECRET;
+      redirectUri = config.youtube?.redirect_uri || process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+    } catch (error) {
+      console.warn('Firebase config not available, using environment variables:', error.message);
+      clientId = process.env.YOUTUBE_CLIENT_ID;
+      clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+      redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+    }
     
     console.log('YouTube OAuth Configuration:');
-    console.log('  CLIENT_ID source:', process.env.YOUTUBE_CLIENT_ID ? 'Environment' : 'Hardcoded');
-    console.log('  CLIENT_SECRET source:', process.env.YOUTUBE_CLIENT_SECRET ? 'Environment' : 'Hardcoded');  
+    console.log('  CLIENT_ID source:', clientId ? (clientId.includes('766869') ? 'Firebase Config' : 'Environment') : 'Missing');
+    console.log('  CLIENT_SECRET source:', clientSecret ? (clientSecret.includes('GOCSPX') ? 'Firebase Config' : 'Environment') : 'Missing');  
     console.log('  REDIRECT_URI source:', process.env.YOUTUBE_REDIRECT_URI ? 'Environment' : 'Hardcoded');
     console.log('  Final values:');
     console.log('    CLIENT_ID:', clientId ? 'Set' : 'Missing');
@@ -61,9 +72,19 @@ class YouTubeService {
       console.log('Using authorization code:', code);
       
       // Create a fresh OAuth client for this specific request to ensure all values are set
-      const clientId = process.env.YOUTUBE_CLIENT_ID;
-      const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-      const redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+      let clientId, clientSecret, redirectUri;
+      
+      try {
+        const config = functions.config();
+        clientId = config.youtube?.client_id || process.env.YOUTUBE_CLIENT_ID;
+        clientSecret = config.youtube?.client_secret || process.env.YOUTUBE_CLIENT_SECRET;
+        redirectUri = config.youtube?.redirect_uri || process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+      } catch (error) {
+        console.warn('Firebase config not available in callback, using environment variables:', error.message);
+        clientId = process.env.YOUTUBE_CLIENT_ID;
+        clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+        redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://api-m2ugc4x7ma-uc.a.run.app/api/youtube/callback';
+      }
       
       console.log('Fresh OAuth client config:');
       console.log('- Client ID:', clientId ? 'Set' : 'Missing');
