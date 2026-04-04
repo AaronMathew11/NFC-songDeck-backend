@@ -1,5 +1,6 @@
 const youtubeService = require('../services/youtubeService');
 const User = require('../models/User');
+const functions = require('firebase-functions');
 
 // Temporary storage for OAuth sessions (in production, use Redis or database)
 const oauthSessions = new Map();
@@ -85,18 +86,24 @@ exports.handleCallback = async (req, res) => {
 
     if (!userId) {
       console.log('Could not determine user ID - session may have expired');
-      const frontendUrl = process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
+      const frontendUrl = functions.config().frontend?.url || process.env.FRONTEND_URL || 'https://nfc-soundeck.netlify.app';
       return res.redirect(`${frontendUrl}/youtube-auth-error?error=${encodeURIComponent('Session expired. Please try connecting YouTube again from the app.')}`);
     }
 
-    await youtubeService.handleOAuthCallback(code, userId);
+    try {
+      await youtubeService.handleOAuthCallback(code, userId);
 
-    // Redirect back to profile page where the YouTube connection component is
-    const frontendUrl = process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
-    res.redirect(`${frontendUrl}/profile?youtube=connected`);
+      // Redirect back to profile page where the YouTube connection component is  
+      const frontendUrl = functions.config().frontend?.url || process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
+      res.redirect(`${frontendUrl}/profile?youtube=connected`);
+    } catch (callbackError) {
+      console.error('YouTube OAuth callback processing failed:', callbackError);
+      const frontendUrl = functions.config().frontend?.url || process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
+      res.redirect(`${frontendUrl}/profile?youtube=error&message=${encodeURIComponent(callbackError.message)}`);
+    }
   } catch (error) {
     console.error('Error handling YouTube callback:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
+    const frontendUrl = functions.config().frontend?.url || process.env.FRONTEND_URL || 'https://nfc-worship-app.web.app';
     res.redirect(`${frontendUrl}/youtube-auth-error?error=${encodeURIComponent(error.message)}`);
   }
 };
@@ -106,6 +113,13 @@ exports.getConnectionStatus = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select('youtubeAccessToken youtubeRefreshToken youtubeConnected');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
     
     // User is connected to YouTube only if they have YouTube OAuth tokens
     const connected = !!(user?.youtubeAccessToken && user?.youtubeRefreshToken);
